@@ -3,147 +3,328 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Timer App</title>
+    <title>Pro Timer - Perfect View</title>
     <style>
+        :root {
+            --primary-gradient: linear-gradient(45deg, #ff0076, #590fb7);
+            --fs-bg: linear-gradient(135deg, #12c2e9 0%, #3a7bd5 50%, #6190e8 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fad0c4, #ffdde1, #ff758c, #ff7eb3);
+            min-height: 100vh;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
             background-size: 400% 400%;
             animation: gradientBG 10s ease infinite;
-            font-family: Arial, sans-serif;
+            font-family: 'Arial Black', sans-serif;
+            overflow: hidden;
         }
+
         @keyframes gradientBG {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
+
+        /* Main Container UI */
         .container {
+            width: 90%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             text-align: center;
-            background: rgb(178, 139, 250);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 10;
         }
-        h1 {
-            margin-bottom: 20px;
-            color: #ff4081;
+
+        /* FULL SCREEN OVERLAY WITH SIDE SPACE */
+        #fs-overlay {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: var(--fs-bg);
+            z-index: 9999;
+            /* Added padding to create space from left and right */
+            padding: 0 8%; 
         }
-        #timer {
-            font-size: 3rem;
-            color: #673ab7;
-            margin-bottom: 20px;
+
+        body.fullscreen-mode #fs-overlay {
+            display: flex;
         }
-        .input-time {
+
+        .fs-timer {
+            /* Adjusted scaling to ensure it never touches edges (18vw instead of 22vw) */
+            font-size: min(18vw, 45vh); 
+            font-weight: 900;
+            color: white;
+            text-align: center;
+            line-height: 1;
+            white-space: nowrap;
+            letter-spacing: -2px;
+            text-shadow: 0 0 40px rgba(255,255,255,0.3);
+            width: 100%;
             display: flex;
             justify-content: center;
-            gap: 5px;
-            margin-bottom: 15px;
+            align-items: center;
         }
-        .input-time input {
-            width: 50px;
-            font-size: 1.2rem;
-            text-align: center;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        .btn {
-            padding: 10px 20px;
-            margin: 5px;
-            font-size: 1rem;
-            border: none;
-            border-radius: 5px;
+
+        .exit-fs {
+            position: absolute;
+            bottom: 40px;
+            padding: 10px 25px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 50px;
             cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             transition: 0.3s;
         }
-        .start { background: #4CAF50; color: white; }
-        .pause { background: #FF9800; color: white; }
-        .reset { background: #F44336; color: white; }
-        .btn:hover { opacity: 0.8; }
-        .footer {
-            margin-top: 20px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #fff;
+        .exit-fs:hover { background: white; color: #3a7bd5; }
+
+        /* Normal Controls (No changes) */
+        .mode-switch {
+            display: flex;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            margin-bottom: 25px;
+            padding: 4px;
         }
+        .mode-switch button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .mode-switch button.active { background: var(--primary-gradient); }
+
+        .picker-container {
+            display: flex;
+            justify-content: center;
+            height: 150px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+        .scroll-wheel {
+            height: 150px;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none;
+            width: 70px;
+        }
+        .scroll-wheel::-webkit-scrollbar { display: none; }
+        .scroll-wheel div {
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: rgba(255,255,255,0.3);
+            scroll-snap-align: center;
+        }
+        .scroll-wheel div.selected { color: white; font-weight: bold; font-size: 2rem; }
+
+        #display { font-size: 3.5rem; color: white; font-weight: bold; margin: 20px 0; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn { padding: 14px; font-size: 0.9rem; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; color: white; text-transform: uppercase; transition: 0.3s; }
+        .start { background: linear-gradient(to right, #00b09b, #96c93d); grid-column: span 2; }
+        .pause { background: linear-gradient(to right, #f8ff00, #ff9100); }
+        .reset { background: linear-gradient(to right, #ff416c, #ff4b2b); }
+        .fs-btn { background: rgba(255,255,255,0.2); grid-column: span 2; margin-top: 10px; border: 1px solid rgba(255,255,255,0.3); }
+
+        .hidden { display: none; }
+        .footer { margin-top: 25px; font-size: 1.2rem; font-weight: bold; color: #fff; }
     </style>
 </head>
 <body>
-    <div class="container">
+
+    <div class="container" id="mainContainer">
         <h1>Timer App</h1>
-        <div class="input-time">
-            <input type="number" id="input-hours" min="0" placeholder="HH">
-            <input type="number" id="input-minutes" min="0" max="59" placeholder="MM">
-            <input type="number" id="input-seconds" min="0" max="59" placeholder="SS">
-            <button class="btn set" onclick="setTimer()">Set</button>
+        <div class="mode-switch">
+            <button id="timerModeBtn" class="active" onclick="switchMode('timer')">TIMER</button>
+            <button id="swModeBtn" onclick="switchMode('stopwatch')">STOPWATCH</button>
         </div>
-        <div id="timer">00:00:00</div>
-        <button class="btn start" onclick="startTimer()">Start</button>
-        <button class="btn pause" onclick="pauseTimer()">Pause</button>
-        <button class="btn reset" onclick="resetTimer()">Reset</button>
-        <audio id="endSound" src="sound.mp3"></audio>
+
+        <div id="timer-input-ui">
+            <div class="picker-container">
+                <div class="scroll-wheel" id="h-wheel" onscroll="updatePickerSelection(this)"></div>
+                <div class="scroll-wheel" id="m-wheel" onscroll="updatePickerSelection(this)"></div>
+                <div class="scroll-wheel" id="s-wheel" onscroll="updatePickerSelection(this)"></div>
+            </div>
+        </div>
+
+        <div id="display" class="hidden">00:00:00</div>
+
+        <div class="controls">
+            <button id="startBtn" class="btn start" onclick="handleStart()">START</button>
+            <button id="pauseBtn" class="btn pause" onclick="handlePause()">PAUSE</button>
+            <button class="btn reset" onclick="handleReset()">RESET</button>
+            <button class="btn fs-btn" onclick="toggleFullscreen(true)">FULL SCREEN</button>
+        </div>
     </div>
-    <div class="footer">App Made By: Rupak Kushwaha</div>
+
+    <!-- Full Screen Overlay -->
+    <div id="fs-overlay">
+        <div class="fs-timer" id="fs-display">00:00:00</div>
+        <button class="exit-fs" onclick="toggleFullscreen(false)">EXIT FULL SCREEN</button>
+    </div>
+
+    <div class="footer">Developed By: A2Z Teach<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <!-- this line for Space -->
+        (Rupak Kushwaha)</div>
+
+    <audio id="endSound" src="sound.mp3"></audio>
+
     <script>
-        let timer;
-        let seconds = 0, minutes = 0, hours = 0;
-        let running = false;
-        
-        function updateDisplay() {
-            document.getElementById('timer').innerText =
-                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        let mode = 'timer'; 
+        let timerInterval;
+        let timeInSeconds = 0;
+        let isRunning = false;
+        let isPaused = false;
+
+        function initWheels() {
+            const hWheel = document.getElementById('h-wheel');
+            const mWheel = document.getElementById('m-wheel');
+            const sWheel = document.getElementById('s-wheel');
+            fillWheel(hWheel, 24);
+            fillWheel(mWheel, 60);
+            fillWheel(sWheel, 60);
+            setTimeout(() => { [hWheel, mWheel, sWheel].forEach(w => updatePickerSelection(w)); }, 100);
         }
-        
-        function setTimer() {
-            hours = parseInt(document.getElementById('input-hours').value) || 0;
-            minutes = parseInt(document.getElementById('input-minutes').value) || 0;
-            seconds = parseInt(document.getElementById('input-seconds').value) || 0;
-            updateDisplay();
+
+        function fillWheel(wheel, count) {
+            wheel.innerHTML = '<div></div>'; 
+            for (let i = 0; i < count; i++) {
+                const div = document.createElement('div');
+                div.textContent = String(i).padStart(2, '0');
+                wheel.appendChild(div);
+            }
+            wheel.innerHTML += '<div></div>';
         }
-        
-        function startTimer() {
-            if (!running) {
-                running = true;
-                timer = setInterval(() => {
-                    if (seconds > 0 || minutes > 0 || hours > 0) {
-                        if (seconds === 0) {
-                            if (minutes > 0) {
-                                minutes--;
-                                seconds = 59;
-                            } else if (hours > 0) {
-                                hours--;
-                                minutes = 59;
-                                seconds = 59;
-                            }
-                        } else {
-                            seconds--;
-                        }
-                        updateDisplay();
-                    } else {
-                        clearInterval(timer);
-                        running = false;
+
+        function updatePickerSelection(wheel) {
+            const items = wheel.querySelectorAll('div');
+            const index = Math.round(wheel.scrollTop / 50);
+            items.forEach((item, i) => {
+                if(i === index + 1) item.classList.add('selected');
+                else item.classList.remove('selected');
+            });
+        }
+
+        function switchMode(newMode) {
+            handleReset();
+            mode = newMode;
+            document.getElementById('timerModeBtn').classList.toggle('active', mode === 'timer');
+            document.getElementById('swModeBtn').classList.toggle('active', mode === 'stopwatch');
+            document.getElementById('timer-input-ui').classList.toggle('hidden', mode !== 'timer');
+            document.getElementById('display').classList.toggle('hidden', mode === 'timer');
+        }
+
+        function formatTime(totalSeconds) {
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function handleStart() {
+            if (isRunning) return;
+            if (!isPaused && mode === 'timer') {
+                const h = parseInt(document.querySelector('#h-wheel .selected')?.innerText || 0);
+                const m = parseInt(document.querySelector('#m-wheel .selected')?.innerText || 0);
+                const s = parseInt(document.querySelector('#s-wheel .selected')?.innerText || 0);
+                timeInSeconds = (h * 3600) + (m * 60) + s;
+                if (timeInSeconds <= 0) return;
+                document.getElementById('timer-input-ui').classList.add('hidden');
+                document.getElementById('display').classList.remove('hidden');
+            }
+            isRunning = true;
+            isPaused = false;
+            updatePauseButtonUI();
+            document.getElementById('startBtn').style.opacity = "0.5";
+            timerInterval = setInterval(() => {
+                if (mode === 'timer') {
+                    timeInSeconds--;
+                    if (timeInSeconds <= 0) {
+                        clearInterval(timerInterval);
                         document.getElementById('endSound').play();
+                        handleReset();
                     }
-                }, 1000);
+                } else { timeInSeconds++; }
+                const formatted = formatTime(timeInSeconds);
+                document.getElementById('display').innerText = formatted;
+                document.getElementById('fs-display').innerText = formatted;
+            }, 1000);
+        }
+
+        function handlePause() {
+            if (!isRunning && !isPaused) return;
+            if (!isPaused) { clearInterval(timerInterval); isRunning = false; isPaused = true; }
+            else { handleStart(); }
+            updatePauseButtonUI();
+        }
+
+        function updatePauseButtonUI() {
+            const btn = document.getElementById('pauseBtn');
+            btn.innerText = isPaused ? "RESUME" : "PAUSE";
+            btn.style.background = isPaused ? "linear-gradient(to right, #00cdac, #02aab0)" : "linear-gradient(to right, #f8ff00, #ff9100)";
+        }
+
+        function handleReset() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            isPaused = false;
+            timeInSeconds = 0;
+            document.getElementById('startBtn').style.opacity = "1";
+            document.getElementById('display').innerText = "00:00:00";
+            document.getElementById('fs-display').innerText = "00:00:00";
+            updatePauseButtonUI();
+            if (mode === 'timer') {
+                document.getElementById('timer-input-ui').classList.remove('hidden');
+                document.getElementById('display').classList.add('hidden');
             }
         }
-        
-        function pauseTimer() {
-            clearInterval(timer);
-            running = false;
+
+        function toggleFullscreen(goFull) {
+            if (goFull) {
+                document.body.classList.add('fullscreen-mode');
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                }
+            } else {
+                document.body.classList.remove('fullscreen-mode');
+                if (document.exitFullscreen) { document.exitFullscreen(); }
+            }
         }
-        
-        function resetTimer() {
-            clearInterval(timer);
-            running = false;
-            seconds = 0;
-            minutes = 0;
-            hours = 0;
-            updateDisplay();
-        }
+
+        initWheels();
     </script>
 </body>
 </html>
